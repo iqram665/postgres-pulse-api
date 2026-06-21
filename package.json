@@ -1,298 +1,160 @@
 {
-  "author": "Isaac Z. Schlueter",
-  "name": "tar",
-  "description": "tar for node",
-  "version": "7.5.16",
+  "name": "undici",
+  "version": "6.27.0",
+  "description": "An HTTP/1.1 client, written from scratch for Node.js",
+  "homepage": "https://undici.nodejs.org",
+  "bugs": {
+    "url": "https://github.com/nodejs/undici/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/isaacs/node-tar.git"
+    "url": "git+https://github.com/nodejs/undici.git"
   },
+  "license": "MIT",
+  "contributors": [
+    {
+      "name": "Daniele Belardi",
+      "url": "https://github.com/dnlup",
+      "author": true
+    },
+    {
+      "name": "Ethan Arrowood",
+      "url": "https://github.com/ethan-arrowood",
+      "author": true
+    },
+    {
+      "name": "Matteo Collina",
+      "url": "https://github.com/mcollina",
+      "author": true
+    },
+    {
+      "name": "Matthew Aitken",
+      "url": "https://github.com/KhafraDev",
+      "author": true
+    },
+    {
+      "name": "Robert Nagy",
+      "url": "https://github.com/ronag",
+      "author": true
+    },
+    {
+      "name": "Szymon Marczak",
+      "url": "https://github.com/szmarczak",
+      "author": true
+    },
+    {
+      "name": "Tomas Della Vedova",
+      "url": "https://github.com/delvedor",
+      "author": true
+    }
+  ],
+  "keywords": [
+    "fetch",
+    "http",
+    "https",
+    "promise",
+    "request",
+    "curl",
+    "wget",
+    "xhr",
+    "whatwg"
+  ],
+  "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
-    "genparse": "node scripts/generate-parse-fixtures.js",
-    "snap": "tap",
-    "test": "tap",
-    "pretest": "npm run prepare",
-    "presnap": "npm run prepare",
-    "prepare": "tshy && bash scripts/build.sh",
-    "preversion": "npm test",
-    "postversion": "npm publish",
-    "prepublishOnly": "git push origin --follow-tags",
-    "format": "prettier --write . --log-level warn",
-    "typedoc": "typedoc --tsconfig .tshy/esm.json ./src/*.ts",
-    "lint": "oxlint --fix src test",
-    "postsnap": "npm run lint",
-    "postlint": "npm run format"
-  },
-  "dependencies": {
-    "@isaacs/fs-minipass": "^4.0.0",
-    "chownr": "^3.0.0",
-    "minipass": "^7.1.2",
-    "minizlib": "^3.1.0",
-    "yallist": "^5.0.0"
+    "build:node": "npx esbuild@0.19.10 index-fetch.js --bundle --platform=node --outfile=undici-fetch.js --define:esbuildDetection=1 --keep-names && node scripts/strip-comments.js",
+    "prebuild:wasm": "node build/wasm.js --prebuild",
+    "build:wasm": "node build/wasm.js --docker",
+    "lint": "standard | snazzy",
+    "lint:fix": "standard --fix | snazzy",
+    "test": "npm run test:javascript && cross-env NODE_V8_COVERAGE=  npm run test:typescript",
+    "test:javascript": "node scripts/generate-pem && npm run test:unit && npm run test:node-fetch && npm run test:cache && npm run test:interceptors && npm run test:fetch && npm run test:cookies && npm run test:eventsource && npm run test:wpt && npm run test:websocket && npm run test:node-test && npm run test:jest",
+    "test:javascript:withoutintl": "node scripts/generate-pem && npm run test:unit && npm run test:node-fetch && npm run test:fetch:nobuild && npm run test:cache && npm run test:interceptors && npm run test:cookies && npm run test:eventsource:nobuild && npm run test:wpt:withoutintl && npm run test:node-test",
+    "test:busboy": "borp -p \"test/busboy/*.js\"",
+    "test:cache": "borp -p \"test/cache/*.js\"",
+    "test:cookies": "borp -p \"test/cookie/*.js\"",
+    "test:eventsource": "npm run build:node && npm run test:eventsource:nobuild",
+    "test:eventsource:nobuild": "borp --expose-gc -p \"test/eventsource/*.js\"",
+    "test:fuzzing": "node test/fuzzing/fuzzing.test.js",
+    "test:fetch": "npm run build:node && npm run test:fetch:nobuild",
+    "test:fetch:nobuild": "borp --timeout 180000 --expose-gc --concurrency 1 -p \"test/fetch/*.js\" && npm run test:webidl && npm run test:busboy",
+    "test:h2": "npm run test:h2:core && npm run test:h2:fetch",
+    "test:h2:core": "borp -p \"test/http2*.js\"",
+    "test:h2:fetch": "npm run build:node && borp -p \"test/fetch/http2*.js\"",
+    "test:interceptors": "borp -p \"test/interceptors/*.js\"",
+    "test:jest": "cross-env NODE_V8_COVERAGE= jest",
+    "test:unit": "borp --expose-gc -p \"test/*.js\"",
+    "test:node-fetch": "borp -p \"test/node-fetch/**/*.js\"",
+    "test:node-test": "borp -p \"test/node-test/**/*.js\"",
+    "test:tdd": "borp --expose-gc -p \"test/*.js\"",
+    "test:tdd:node-test": "borp -p \"test/node-test/**/*.js\" -w",
+    "test:typescript": "tsd && tsc test/imports/undici-import.ts --typeRoots ./types && tsc ./types/*.d.ts --noEmit --typeRoots ./types",
+    "test:webidl": "borp -p \"test/webidl/*.js\"",
+    "test:websocket": "borp -p \"test/websocket/*.js\"",
+    "test:websocket:autobahn": "node test/autobahn/client.js",
+    "test:websocket:autobahn:report": "node test/autobahn/report.js",
+    "test:wpt": "node test/wpt/start-fetch.mjs && node test/wpt/start-FileAPI.mjs && node test/wpt/start-mimesniff.mjs && node test/wpt/start-xhr.mjs && node test/wpt/start-websockets.mjs && node test/wpt/start-cacheStorage.mjs && node test/wpt/start-eventsource.mjs",
+    "test:wpt:withoutintl": "node test/wpt/start-fetch.mjs && node test/wpt/start-mimesniff.mjs && node test/wpt/start-xhr.mjs && node test/wpt/start-cacheStorage.mjs && node test/wpt/start-eventsource.mjs",
+    "coverage": "npm run coverage:clean && cross-env NODE_V8_COVERAGE=./coverage/tmp npm run test:javascript && npm run coverage:report",
+    "coverage:ci": "npm run coverage:clean && cross-env NODE_V8_COVERAGE=./coverage/tmp npm run test:javascript && npm run coverage:report:ci",
+    "coverage:clean": "node ./scripts/clean-coverage.js",
+    "coverage:report": "cross-env NODE_V8_COVERAGE= c8 report",
+    "coverage:report:ci": "c8 report",
+    "bench": "echo \"Error: Benchmarks have been moved to '/benchmarks'\" && exit 1",
+    "serve:website": "echo \"Error: Documentation has been moved to '/docs'\" && exit 1",
+    "prepare": "husky && node ./scripts/platform-shell.js"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
-    "chmodr": "^2.0.2",
-    "end-of-stream": "^1.4.3",
-    "esbuild": "^0.28.0",
-    "events-to-array": "^2.0.3",
-    "mutate-fs": "^2.1.1",
-    "nock": "^13.5.4",
-    "oxlint": "^1.67.0",
-    "oxlint-tsgolint": "^0.23.0",
-    "prettier": "^3.8.3",
-    "rimraf": "^6.1.2",
-    "tap": "^21.7.4",
-    "tshy": "^4.1.2",
-    "typedoc": "^0.28.19"
+    "@fastify/busboy": "2.1.1",
+    "@matteo.collina/tspl": "^0.1.1",
+    "@metcoder95/https-pem": "^1.0.0",
+    "@sinonjs/fake-timers": "^11.1.0",
+    "@types/node": "~18.19.50",
+    "abort-controller": "^3.0.0",
+    "borp": "^0.15.0",
+    "c8": "^10.0.0",
+    "cross-env": "^7.0.3",
+    "dns-packet": "^5.4.0",
+    "fast-check": "^3.17.1",
+    "form-data": "^4.0.0",
+    "formdata-node": "^6.0.3",
+    "husky": "^9.0.7",
+    "jest": "^29.0.2",
+    "jsdom": "^24.0.0",
+    "node-forge": "^1.3.1",
+    "pre-commit": "^1.2.2",
+    "proxy": "^2.1.1",
+    "snazzy": "^9.0.0",
+    "standard": "^17.0.0",
+    "tsd": "^0.31.0",
+    "typescript": "^5.0.2",
+    "ws": "^8.11.0"
   },
-  "license": "BlueOak-1.0.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=18.17"
   },
-  "files": [
-    "dist"
-  ],
-  "tshy": {
-    "exports": {
-      "./package.json": "./package.json",
-      ".": {
-        "import": {
-          "types": "./dist/esm/index.d.ts",
-          "default": "./dist/esm/index.min.js"
-        },
-        "require": {
-          "types": "./dist/commonjs/index.d.ts",
-          "default": "./dist/commonjs/index.min.js"
-        }
-      },
-      "./raw": "./src/index.ts",
-      "./c": "./src/create.ts",
-      "./create": "./src/create.ts",
-      "./replace": "./src/create.ts",
-      "./r": "./src/create.ts",
-      "./list": "./src/list.ts",
-      "./t": "./src/list.ts",
-      "./update": "./src/update.ts",
-      "./u": "./src/update.ts",
-      "./extract": "./src/extract.ts",
-      "./x": "./src/extract.ts",
-      "./pack": "./src/pack.ts",
-      "./unpack": "./src/unpack.ts",
-      "./parse": "./src/parse.ts",
-      "./read-entry": "./src/read-entry.ts",
-      "./write-entry": "./src/write-entry.ts",
-      "./header": "./src/header.ts",
-      "./pax": "./src/pax.ts",
-      "./types": "./src/types.ts"
-    },
-    "selfLink": false
+  "standard": {
+    "env": [
+      "jest"
+    ],
+    "ignore": [
+      "lib/llhttp/constants.js",
+      "lib/llhttp/utils.js",
+      "test/fixtures/wpt"
+    ]
   },
-  "exports": {
-    "./package.json": "./package.json",
-    ".": {
-      "import": {
-        "types": "./dist/esm/index.d.ts",
-        "default": "./dist/esm/index.min.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/index.d.ts",
-        "default": "./dist/commonjs/index.min.js"
-      }
-    },
-    "./raw": {
-      "import": {
-        "types": "./dist/esm/index.d.ts",
-        "default": "./dist/esm/index.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/index.d.ts",
-        "default": "./dist/commonjs/index.js"
-      }
-    },
-    "./c": {
-      "import": {
-        "types": "./dist/esm/create.d.ts",
-        "default": "./dist/esm/create.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/create.d.ts",
-        "default": "./dist/commonjs/create.js"
-      }
-    },
-    "./create": {
-      "import": {
-        "types": "./dist/esm/create.d.ts",
-        "default": "./dist/esm/create.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/create.d.ts",
-        "default": "./dist/commonjs/create.js"
-      }
-    },
-    "./replace": {
-      "import": {
-        "types": "./dist/esm/create.d.ts",
-        "default": "./dist/esm/create.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/create.d.ts",
-        "default": "./dist/commonjs/create.js"
-      }
-    },
-    "./r": {
-      "import": {
-        "types": "./dist/esm/create.d.ts",
-        "default": "./dist/esm/create.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/create.d.ts",
-        "default": "./dist/commonjs/create.js"
-      }
-    },
-    "./list": {
-      "import": {
-        "types": "./dist/esm/list.d.ts",
-        "default": "./dist/esm/list.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/list.d.ts",
-        "default": "./dist/commonjs/list.js"
-      }
-    },
-    "./t": {
-      "import": {
-        "types": "./dist/esm/list.d.ts",
-        "default": "./dist/esm/list.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/list.d.ts",
-        "default": "./dist/commonjs/list.js"
-      }
-    },
-    "./update": {
-      "import": {
-        "types": "./dist/esm/update.d.ts",
-        "default": "./dist/esm/update.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/update.d.ts",
-        "default": "./dist/commonjs/update.js"
-      }
-    },
-    "./u": {
-      "import": {
-        "types": "./dist/esm/update.d.ts",
-        "default": "./dist/esm/update.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/update.d.ts",
-        "default": "./dist/commonjs/update.js"
-      }
-    },
-    "./extract": {
-      "import": {
-        "types": "./dist/esm/extract.d.ts",
-        "default": "./dist/esm/extract.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/extract.d.ts",
-        "default": "./dist/commonjs/extract.js"
-      }
-    },
-    "./x": {
-      "import": {
-        "types": "./dist/esm/extract.d.ts",
-        "default": "./dist/esm/extract.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/extract.d.ts",
-        "default": "./dist/commonjs/extract.js"
-      }
-    },
-    "./pack": {
-      "import": {
-        "types": "./dist/esm/pack.d.ts",
-        "default": "./dist/esm/pack.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/pack.d.ts",
-        "default": "./dist/commonjs/pack.js"
-      }
-    },
-    "./unpack": {
-      "import": {
-        "types": "./dist/esm/unpack.d.ts",
-        "default": "./dist/esm/unpack.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/unpack.d.ts",
-        "default": "./dist/commonjs/unpack.js"
-      }
-    },
-    "./parse": {
-      "import": {
-        "types": "./dist/esm/parse.d.ts",
-        "default": "./dist/esm/parse.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/parse.d.ts",
-        "default": "./dist/commonjs/parse.js"
-      }
-    },
-    "./read-entry": {
-      "import": {
-        "types": "./dist/esm/read-entry.d.ts",
-        "default": "./dist/esm/read-entry.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/read-entry.d.ts",
-        "default": "./dist/commonjs/read-entry.js"
-      }
-    },
-    "./write-entry": {
-      "import": {
-        "types": "./dist/esm/write-entry.d.ts",
-        "default": "./dist/esm/write-entry.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/write-entry.d.ts",
-        "default": "./dist/commonjs/write-entry.js"
-      }
-    },
-    "./header": {
-      "import": {
-        "types": "./dist/esm/header.d.ts",
-        "default": "./dist/esm/header.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/header.d.ts",
-        "default": "./dist/commonjs/header.js"
-      }
-    },
-    "./pax": {
-      "import": {
-        "types": "./dist/esm/pax.d.ts",
-        "default": "./dist/esm/pax.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/pax.d.ts",
-        "default": "./dist/commonjs/pax.js"
-      }
-    },
-    "./types": {
-      "import": {
-        "types": "./dist/esm/types.d.ts",
-        "default": "./dist/esm/types.js"
-      },
-      "require": {
-        "types": "./dist/commonjs/types.d.ts",
-        "default": "./dist/commonjs/types.js"
-      }
+  "tsd": {
+    "directory": "test/types",
+    "compilerOptions": {
+      "esModuleInterop": true,
+      "lib": [
+        "esnext"
+      ]
     }
   },
-  "type": "module",
-  "main": "./dist/commonjs/index.min.js",
-  "types": "./dist/commonjs/index.d.ts",
-  "module": "./dist/esm/index.min.js"
+  "jest": {
+    "testMatch": [
+      "<rootDir>/test/jest/**"
+    ]
+  }
 }
